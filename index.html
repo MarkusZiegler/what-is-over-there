@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Over there">
+  <meta name="theme-color" content="#0b0f14">
+  <title>What is over there?</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='22' fill='none' stroke='%23ff5a36' stroke-width='5'/%3E%3Cpath d='M32 2v18M32 44v18M2 32h18M44 32h18' stroke='%23ff5a36' stroke-width='5'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- ============ Start ============ -->
+<section id="view-start" class="view active">
+  <div class="start-inner">
+    <svg class="logo" viewBox="0 0 64 64" aria-hidden="true">
+      <circle cx="32" cy="32" r="22" fill="none" stroke="currentColor" stroke-width="4"/>
+      <path d="M32 2v18M32 44v18M2 32h18M44 32h18" stroke="currentColor" stroke-width="4"/>
+    </svg>
+    <h1>What is over there?</h1>
+    <p>Richte die Kamera auf etwas in der Ferne, etwa eine Ortschaft am anderen Seeufer, eine Ruine oder eine Burg, und finde heraus, was es ist.</p>
+    <button id="btn-start" class="primary big">Starten</button>
+    <ul class="hints">
+      <li>Erlaube Kamera, Standort und Bewegungssensoren.</li>
+      <li>Halte das Handy im Hochformat.</li>
+      <li>Hüllen oder Halter mit Magnet (MagSafe) verfälschen den Kompass.</li>
+    </ul>
+    <p id="start-error" class="error"></p>
+  </div>
+</section>
+
+<!-- ============ Kamera ============ -->
+<section id="view-camera" class="view">
+  <video id="video" autoplay muted playsinline></video>
+
+  <svg class="crosshair" viewBox="0 0 100 100" aria-hidden="true">
+    <circle cx="50" cy="50" r="18" />
+    <path d="M50 4v30M50 66v30M4 50h30M66 50h30" />
+    <circle cx="50" cy="50" r="1.6" class="dot" />
+  </svg>
+
+  <div class="hud-top">
+    <canvas id="tape" class="tape"></canvas>
+    <div class="heading"><span id="hud-heading">–––°</span><span id="hud-dir"></span></div>
+    <div class="hud-row">
+      <span id="hud-gps">GPS …</span>
+      <span id="hud-pitch">Neigung –</span>
+      <span id="hud-stab">Streuung –</span>
+    </div>
+    <div id="hud-warn" class="hud-warn hidden"></div>
+  </div>
+
+  <div class="hud-bottom">
+    <button id="btn-to-map" class="round" aria-label="Karte">
+      <svg viewBox="0 0 24 24"><path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2zm0 0v14m6-12v14"/></svg>
+    </button>
+    <button id="btn-peilen" class="shutter" aria-label="Peilen"><span>Peilen</span></button>
+    <button id="btn-settings" class="round" aria-label="Einstellungen">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3m0 14v3M2 12h3m14 0h3M4.9 4.9l2.1 2.1m10 10 2.1 2.1M4.9 19.1 7 17M17 7l2.1-2.1"/></svg>
+    </button>
+  </div>
+
+  <div id="peil-overlay" class="peil-overlay hidden">
+    <div>Ruhig halten …</div>
+    <div class="bar"><i></i></div>
+  </div>
+  <div class="landscape-warn">Bitte im Hochformat halten</div>
+</section>
+
+<!-- ============ Karte ============ -->
+<section id="view-map" class="view">
+  <div id="map"></div>
+  <div class="map-top">
+    <button id="btn-to-camera" class="pill">← Kamera</button>
+    <div id="map-title" class="map-title"></div>
+  </div>
+  <div id="calib-banner" class="banner hidden">
+    <span>Tippe auf der Karte auf das Ziel, das du angepeilt hast.</span>
+    <button id="btn-calib-cancel" class="pill small">Abbrechen</button>
+  </div>
+
+  <div class="sheet">
+    <div class="ctrl">
+      <div class="ctrl-row">
+        <span class="lbl">Entfernung</span>
+        <div class="chips" id="dist-chips"></div>
+      </div>
+      <div class="ctrl-row">
+        <span class="lbl">Toleranz <b id="tol-val">±5°</b></span>
+        <input type="range" id="tol" min="1" max="20" step="1" value="5">
+      </div>
+      <div class="ctrl-row wrap">
+        <div class="chips" id="group-chips"></div>
+        <div class="chips" id="sort-chips"></div>
+      </div>
+      <div class="ctrl-row wrap">
+        <label class="chk"><input type="checkbox" id="chk-history"> Frühere Peilungen</label>
+        <button id="btn-calib" class="pill small">🎯 Kalibrieren</button>
+        <button id="btn-settings2" class="pill small">Einstellungen</button>
+      </div>
+    </div>
+    <div id="status" class="status"></div>
+    <ul id="results" class="results"></ul>
+    <p class="attrib">Daten © OpenStreetMap-Mitwirkende</p>
+  </div>
+</section>
+
+<!-- ============ Einstellungen ============ -->
+<div id="settings" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="settings-title">
+  <div class="modal-inner">
+    <h2 id="settings-title">Einstellungen</h2>
+
+    <h3>Kompass-Korrektur</h3>
+    <div class="set-row">
+      <input type="number" id="offset" step="0.5" inputmode="decimal"> °
+      <button id="btn-offset-reset" class="pill small">Zurücksetzen</button>
+    </div>
+    <p class="small">Wird zu jeder Messung addiert. Am einfachsten setzt du sie über <b>🎯 Kalibrieren</b>: Ein bekanntes Ziel in mindestens 1 km Entfernung anpeilen und dann auf der Karte antippen. Die Korrektur gilt für dieses Handy mit dieser Hülle.</p>
+
+    <h3>Sensoren (live)</h3>
+    <pre id="debug">–</pre>
+
+    <h3>Verlauf</h3>
+    <div class="set-row">
+      <span id="hist-count"></span>
+      <button id="btn-hist-clear" class="pill small">Verlauf löschen</button>
+    </div>
+
+    <button id="btn-settings-close" class="primary">Schließen</button>
+  </div>
+</div>
+
+<div id="toast" class="toast hidden" role="status"></div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script type="module" src="app.js"></script>
+</body>
+</html>
